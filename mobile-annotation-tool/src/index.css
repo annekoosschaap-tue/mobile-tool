@@ -11,3 +11,100 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Overlay stays fixed and blocks background */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  background: rgba(0, 0, 0, 0.6);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  z-index: 1000;
+}
+
+/* Modal container */
+.modal {
+  background: white;
+  border-radius: 12px;
+
+  width: 500px;
+  max-width: 90%;
+
+  max-height: 90vh;        /* ✅ key: limit height */
+  display: flex;
+  flex-direction: column;  /* ✅ allows inner scrolling */
+
+  overflow: hidden;        /* prevents outer scroll bleed */
+}
+
+/* Header stays fixed inside modal */
+.header {
+  padding: 1rem;
+  font-weight: bold;
+  border-bottom: 1px solid #ddd;
+
+  flex-shrink: 0;
+}
+
+/* Scrollable content */
+/* Make form fill modal */
+.form {
+  display: flex;
+  flex-direction: column;
+  
+  flex: 1;              /* ✅ THIS is the key fix */
+  min-height: 0;        /* ✅ allows child to shrink for scrolling */
+}
+
+/* Scrollable area */
+.form-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+
+  min-height: 0;        /* ✅ critical for scroll to work in flexbox */
+}
+
+.form-content label {
+  display: block;        /* ✅ ensures full line */
+  width: 100%;           /* ✅ gives space to align */
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
+  text-align: left;
+}
+
+.form-content input {
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.form-footer {
+  padding: 1rem;
+  border-top: 1px solid #ddd;
+  background: white;
+
+  flex-shrink: 0;   /* ✅ stays at bottom naturally */
+}
+
+.form-footer button {
+  width: 100%;
+  padding: 0.75rem;
+  background: #111;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.form-footer button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

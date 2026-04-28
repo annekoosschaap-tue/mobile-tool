@@ -1,10 +1,35 @@
 import './App.css';
-import Form from './components/Form';
+import { useState } from 'react';
+import FormModal from './components/FormModal';
+import STLViewer from './components/STLViewer';
+import TaskModal from './components/TaskModal';
 
 function App() {
+  const [step, setStep] = useState("form");
+  const [userId, setUserId] = useState(null);
+
   return (
     <div className="App">
-      <Form />
+
+      {step === "form" && (
+        <FormModal
+          onSubmit={(id) => {
+            setUserId(id);
+            setStep("instructions");
+          }}
+        />
+      )}
+
+      {step === "instructions" && (
+        <TaskModal
+          onContinue={() => setStep("viewer")}
+        />
+      )}
+
+      {step === "viewer" && (
+        <STLViewer userId={userId} />
+      )}
+
     </div>
   );
 }
