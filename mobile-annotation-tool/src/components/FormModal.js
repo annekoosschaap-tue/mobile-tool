@@ -19,33 +19,61 @@ export default function FormModal({ onSubmit }) {
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
+    const newValue = type === "checkbox" ? checked : value;
+
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: newValue,
     }));
+
+    // Live validation
+    let newErrors = { ...errors };
+
+    if (name === "orcid") {
+      if (value && !isValidOrcid(value)) {
+        newErrors.orcid = "Invalid ORCID format (XXXX-XXXX-XXXX-XXXX)";
+      } else {
+        delete newErrors.orcid;
+      }
+    }
+
+    if (name === "email") {
+      if (!value.includes("@")) {
+        newErrors.email = "Invalid email address";
+      } else {
+        delete newErrors.email;
+      }
+    }
+
+    if (name === "yearsOfExperience") {
+      if (value < 0) {
+        newErrors.yearsOfExperience = "Must be ≥ 0";
+      } else {
+        delete newErrors.yearsOfExperience;
+      }
+    }
+
+    setErrors(newErrors);
   };
 
-  // ✅ ORCID validation (basic format + checksum support for X)
+  // ORCID validation (basic format + checksum support for X)
   const isValidOrcid = (orcid) => {
     if (!orcid) return true; // optional field
 
-    const regex = /^\d{4}-\d{4}-\d{4}-\d{4}$/;
+    const regex = /^\d{4}-\d{4}-\d{4}-[\dX]$/;
     return regex.test(orcid);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.consent) {
-      setErrorMsg("You must agree before submitting.");
-      return;
-    }
-
-    if (!isValidOrcid(formData.orcid)) {
-      setErrorMsg("Invalid ORCID format (expected XXXX-XXXX-XXXX-XXXX).");
+    if (Object.keys(errors).length > 0) {
+      setErrorMsg("Please fix the highlighted fields.");
       return;
     }
 
@@ -66,7 +94,6 @@ export default function FormModal({ onSubmit }) {
       consent: formData.consent,
     };
 
-    // ✅ RETURN inserted row (important!)
     const { error } = await supabase
       .from("users")
       .insert([newSubmission]);
@@ -79,8 +106,9 @@ export default function FormModal({ onSubmit }) {
       return;
     }
 
-    // ✅ Pass user ID upward
-    onSubmit("0");
+    // Pass user ID upward #TODO: Make this a useful user_id
+    const userId = "0";
+    onSubmit(userId);
   };
 
   return (
@@ -105,34 +133,43 @@ export default function FormModal({ onSubmit }) {
 
           <label>Email</label>
           <input name="email" type="email" placeholder="john.doe@email.com" onChange={handleChange} required />
-
-          <label>ORCID</label>
-          <input name="orcid" placeholder="0000-0000-0000-0000" onChange={handleChange} />
+          {errors.email && <p className="error">{errors.email}</p>}
 
           <h3>Professional Information</h3>
 
           <label>Years of Experience</label>
-          <input name="yearsofexperience" placeholder="5" onChange={handleChange} />
+          <input name="yearsofexperience" placeholder="5" onChange={handleChange} required/>
+          {errors.yearsOfExperience && <p className="error">{errors.yearsOfExperience}</p>}
 
           <label>Institution</label>
-          <input name="institution" placeholder="Technical University of Eindhoven" onChange={handleChange} />
+          <input name="institution" placeholder="Technical University of Eindhoven" onChange={handleChange} required/>
 
           <label>Department</label>
-          <input name="department" placeholder="Electrical Engineering" onChange={handleChange} />
+          <input name="department" placeholder="Electrical Engineering" onChange={handleChange} required/>
 
           <label>City</label>
-          <input name="city" placeholder="Eindhoven" onChange={handleChange} />
+          <input name="city" placeholder="Eindhoven" onChange={handleChange} required/>
 
           <label>Country</label>
-          <input name="country" placeholder="The Netherlands" onChange={handleChange} />
+          <input name="country" placeholder="The Netherlands" onChange={handleChange} required/>
+        
+          <label>ORCID</label>
+          <input name="orcid" placeholder="0000-0000-0000-0000" onChange={handleChange} />
+          {errors.orcid && <p className="error">{errors.orcid}</p>}
 
           <label className="consent">
-            <input type="checkbox" name="consent" onChange={handleChange} />
+            <input 
+              type="checkbox" 
+              name="consent" 
+              onChange={handleChange} 
+              required
+            />
             <span>
               I agree to the publication terms and confirm that the information
               provided is accurate.
             </span>
           </label>
+          {errors.consent && <p className="error">{errors.consent}</p>}
 
           {errorMsg && <p className="error">{errorMsg}</p>}
         </div>

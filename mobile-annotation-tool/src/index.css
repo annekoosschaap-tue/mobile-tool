@@ -12,7 +12,6 @@ code {
     monospace;
 }
 
-/* Overlay stays fixed and blocks background */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -29,7 +28,6 @@ code {
   z-index: 1000;
 }
 
-/* Modal container */
 .modal {
   background: white;
   border-radius: 12px;
@@ -37,14 +35,13 @@ code {
   width: 500px;
   max-width: 90%;
 
-  max-height: 90vh;        /* ✅ key: limit height */
+  max-height: 90vh;
   display: flex;
-  flex-direction: column;  /* ✅ allows inner scrolling */
+  flex-direction: column;
 
-  overflow: hidden;        /* prevents outer scroll bleed */
+  overflow: hidden;
 }
 
-/* Header stays fixed inside modal */
 .header {
   padding: 1rem;
   font-weight: bold;
@@ -53,32 +50,42 @@ code {
   flex-shrink: 0;
 }
 
-/* Scrollable content */
-/* Make form fill modal */
 .form {
   display: flex;
   flex-direction: column;
-  
-  flex: 1;              /* ✅ THIS is the key fix */
-  min-height: 0;        /* ✅ allows child to shrink for scrolling */
+
+  flex: 1;
+  min-height: 0;
 }
 
-/* Scrollable area */
 .form-content {
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
 
-  min-height: 0;        /* ✅ critical for scroll to work in flexbox */
+  min-height: 0;
 }
 
-.form-content label {
-  display: block;        /* ✅ ensures full line */
-  width: 100%;           /* ✅ gives space to align */
+.form-content h3 {
+  margin: 0.5rem 0;
+}
+
+.form-content label:not(.consent) {
+  display: block;
+  width: 100%;
   font-size: 0.9rem;
   font-weight: 500;
   margin-top: 0.5rem;
   text-align: left;
+}
+
+.form-content label::after {
+  content: "";
+}
+
+.form-content label:has(+ input[required])::after {
+  content: "*";
+  color: red;
 }
 
 .form-content input {
@@ -90,8 +97,8 @@ code {
   padding: 1rem;
   border-top: 1px solid #ddd;
   background: white;
-
-  flex-shrink: 0;   /* ✅ stays at bottom naturally */
+  
+  flex-shrink: 0;
 }
 
 .form-footer button {
@@ -107,4 +114,36 @@ code {
 .form-footer button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.required-note {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0.5rem 1rem;
+}
+
+.consent {
+  display: grid;    
+  grid-template-columns: auto 1fr;
+  column-gap: 0.6rem;
+  align-items: start;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.consent input {
+  margin-top: 0.2rem;
+  transform: scale(1.1);
+  cursor: pointer;
+
+}
+
+.consent span {
+  display: block;
+  line-height: 1.4;
+}
+
+.consent span::after {
+  content: " *";
+  color: red;
 }
