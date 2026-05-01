@@ -49,7 +49,7 @@ function STLViewer({ userId }) {
     // ---------------------------
     // Load STL from public folder
     // ---------------------------
-    fetch(`/C0001.stl`)
+    fetch(`${process.env.PUBLIC_URL}/cases/C0001.stl`)
       .then((res) => res.arrayBuffer())
       .then((arrayBuffer) => {
         reader.parseAsArrayBuffer(arrayBuffer);
