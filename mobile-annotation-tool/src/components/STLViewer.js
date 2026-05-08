@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { supabase } from "./SupabaseClient";
 
 import "@kitware/vtk.js/favicon";
 import "@kitware/vtk.js/Rendering/Profiles/Geometry";
@@ -9,66 +10,182 @@ import vtkSTLReader from "@kitware/vtk.js/IO/Geometry/STLReader";
 import vtkPolyDataNormals from "@kitware/vtk.js/Filters/Core/PolyDataNormals";
 import vtkFullScreenRenderWindow from "@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow";
 
-function STLViewer({ userId }) {
+function STLViewer({ userId, patientId, onNext, isLast }) {
   const containerRef = useRef(null);
 
+  const [annotations, setAnnotations] = useState([]);
+
+  // Store VTK objects so we can access them outside useEffect
+  const rendererRef = useRef(null);
+  const renderWindowRef = useRef(null);
+  const cameraRef = useRef(null);
+
+  // ---------------------------
+  // Fetch annotations
+  // ---------------------------
+  const fetchAnnotations = async () => {
+    const { data, error } = await supabase
+      .from("annotations")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("patient_id", patientId);
+
+    setAnnotations(data || []);
+  };
+
+  useEffect(() => {
+    fetchAnnotations();
+  }, [patientId]);
+
+  // ---------------------------
+  // VTK setup
+  // ---------------------------
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // ---------------------------
-    // Renderer setup
-    // ---------------------------
-    const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
-      rootContainer: containerRef.current,
-      background: [0.1, 0.1, 0.1],
-    });
+    let fullScreenRenderer = null;
 
-    const renderer = fullScreenRenderer.getRenderer();
-    const renderWindow = fullScreenRenderer.getRenderWindow();
+    requestAnimationFrame(() => {
+      if (!containerRef.current) return;
 
-    // ---------------------------
-    // VTK pipeline (your example)
-    // ---------------------------
-    const reader = vtkSTLReader.newInstance();
-    const mapper = vtkMapper.newInstance({ scalarVisibility: false });
-    const actor = vtkActor.newInstance();
-
-    const normals = vtkPolyDataNormals.newInstance();
-    normals.setInputConnection(reader.getOutputPort());
-
-    mapper.setInputConnection(normals.getOutputPort());
-    actor.setMapper(mapper);
-
-    renderer.addActor(actor);
-
-    function update() {
-      renderer.resetCamera();
-      renderWindow.render();
-    }
-
-    // ---------------------------
-    // Load STL from public folder
-    // ---------------------------
-    fetch(`${process.env.PUBLIC_URL}/cases/C0001.stl`)
-      .then((res) => res.arrayBuffer())
-      .then((arrayBuffer) => {
-        reader.parseAsArrayBuffer(arrayBuffer);
-        update();
+      const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
+        rootContainer: containerRef.current,
+        background: [0.1, 0.1, 0.1],
       });
 
-    // ---------------------------
-    // Cleanup (IMPORTANT in React)
-    // ---------------------------
-    return () => {
-      fullScreenRenderer.delete();
-    };
-  }, []);
+      const renderer = fullScreenRenderer.getRenderer();
+      const renderWindow = fullScreenRenderer.getRenderWindow();
 
-    return (
+      rendererRef.current = renderer;
+      renderWindowRef.current = renderWindow;
+
+      const reader = vtkSTLReader.newInstance();
+      const mapper = vtkMapper.newInstance({ scalarVisibility: false });
+      const actor = vtkActor.newInstance();
+
+      const normals = vtkPolyDataNormals.newInstance();
+      normals.setInputConnection(reader.getOutputPort());
+
+      mapper.setInputConnection(normals.getOutputPort());
+      actor.setMapper(mapper);
+
+      renderer.addActor(actor);
+
+      const camera = renderer.getActiveCamera();
+      cameraRef.current = camera;
+
+      fetch(`${process.env.PUBLIC_URL}/cases/${patientId}.stl`)
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error("Failed to load STL");
+          }
+
+          return res.arrayBuffer();
+        })
+        .then((arrayBuffer) => {
+          reader.parseAsArrayBuffer(arrayBuffer);
+
+          renderer.resetCamera();
+          renderWindow.render();
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+      });
+
+    return () => {
+      if (fullScreenRenderer) {
+        fullScreenRenderer.delete();
+      }
+    };
+  }, [patientId]);
+
+  // ---------------------------
+  // Camera helpers
+  // ---------------------------
+  const getCameraState = () => {
+    const camera = cameraRef.current;
+    return {
+      position: camera.getPosition(),
+      focalPoint: camera.getFocalPoint(),
+      viewUp: camera.getViewUp(),
+    };
+  };
+
+  const setCameraState = (state) => {
+    const camera = cameraRef.current;
+    const renderWindow = renderWindowRef.current;
+
+    camera.setPosition(...state.position);
+    camera.setFocalPoint(...state.focalPoint);
+    camera.setViewUp(...state.viewUp);
+
+    renderWindow.render();
+  };
+
+  // ---------------------------
+  // Annotation actions
+  // ---------------------------
+  const saveAnnotation = async () => {
+    const cam = getCameraState();
+
+    await supabase.from("annotations").insert([
+      {
+        user_id: userId,
+        patient_id: patientId,
+        camera_position: cam.position,
+        camera_focal_point: cam.focalPoint,
+        camera_view_up: cam.viewUp,
+      },
+    ]);
+
+    fetchAnnotations();
+  };
+
+  const deleteAnnotation = async (id) => {
+    await supabase.from("annotations").delete().eq("id", id);
+    fetchAnnotations();
+  };
+
+  // ---------------------------
+  // UI
+  // ---------------------------
+  return (
     <div className="vtk-wrapper">
-        <div ref={containerRef} className="vtk-container" />
+      <div ref={containerRef} className="vtk-container" />
+
+      {/* Controls */}
+      <div className="viewer-controls">
+        <button onClick={saveAnnotation}>Save view</button>
+        <button onClick={onNext}>
+          {isLast ? "Finish" : "Next patient"}
+        </button>
+      </div>
+
+      {/* Bottom sheet */}
+      <div className="bottom-sheet">
+        {annotations.map((a) => (
+          <div key={a.id} className="annotation-item">
+            <button
+              onClick={() =>
+                setCameraState({
+                  position: a.camera_position,
+                  focalPoint: a.camera_focal_point,
+                  viewUp: a.camera_view_up,
+                })
+              }
+            >
+              Recall
+            </button>
+
+            <button onClick={() => deleteAnnotation(a.id)}>
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
-    );
+  );
 }
 
 export default STLViewer;
