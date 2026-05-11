@@ -69,6 +69,9 @@ function STLViewer({ userId, patientId, onNext, isLast }) {
       mapper.setInputConnection(normals.getOutputPort());
       actor.setMapper(mapper);
 
+      // Rotate upside-down STL
+      actor.rotateX(180);
+
       renderer.addActor(actor);
 
       const camera = renderer.getActiveCamera();
