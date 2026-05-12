@@ -9,6 +9,10 @@ import vtkMapper from "@kitware/vtk.js/Rendering/Core/Mapper";
 import vtkSTLReader from "@kitware/vtk.js/IO/Geometry/STLReader";
 import vtkPolyDataNormals from "@kitware/vtk.js/Filters/Core/PolyDataNormals";
 import vtkFullScreenRenderWindow from "@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow";
+import vtkRenderWindowInteractor from "@kitware/vtk.js/Rendering/Core/RenderWindowInteractor";
+import vtkOpenGLRenderWindow from "@kitware/vtk.js/Rendering/OpenGL/RenderWindow";
+
+import vtkInteractorStyleArcballCamera from './InteractorStyleArcballCamera';
 
 function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
   const containerRef = useRef(null);
@@ -56,6 +60,11 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
       const renderer = fullScreenRenderer.getRenderer();
       const renderWindow = fullScreenRenderer.getRenderWindow();
 
+      const interactor = fullScreenRenderer.getInteractor();
+      interactor.setInteractorStyle(
+        vtkInteractorStyleArcballCamera.newInstance()
+      );
+
       rendererRef.current = renderer;
       renderWindowRef.current = renderWindow;
 
@@ -69,12 +78,13 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
       mapper.setInputConnection(normals.getOutputPort());
       actor.setMapper(mapper);
 
-      // Rotate upside-down STL
-      actor.rotateX(180);
-
       renderer.addActor(actor);
 
       const camera = renderer.getActiveCamera();
+      camera.setPosition(0, 0, -1);
+      camera.setFocalPoint(0, 0, 0);
+      camera.setViewUp(0, -1, 0);
+      camera.setParallelProjection(true);
       cameraRef.current = camera;
 
       fetch(`${process.env.PUBLIC_URL}/cases/${patientId}.stl`)
@@ -167,6 +177,48 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
     };
   }
 
+  function handleReset() {
+    const camera = cameraRef.current;
+    const renderer = rendererRef.current;
+    const renderWindow = renderWindowRef.current;
+
+    // Reset to initial camera view (manual or default)
+    camera.setPosition(0, 0, -1);
+    camera.setFocalPoint(0, 0, 0);
+    camera.setViewUp(0, -1, 0);
+    renderer.resetCamera()
+    renderWindow.render();
+  }
+
+  function handleInvert() {
+    const camera = cameraRef.current;
+    const renderer = rendererRef.current;
+    const renderWindow = renderWindowRef.current;
+
+    // Invert the current camera view
+    const position = camera.getPosition();
+    const focalPoint = camera.getFocalPoint();
+
+    // New position = focalPoint + (focalPoint - position)
+    const invertedPosition = [
+      focalPoint[0] * 2 - position[0],
+      focalPoint[1] * 2 - position[1],
+      focalPoint[2] * 2 - position[2],
+    ];
+
+    camera.setPosition(...invertedPosition);
+
+    // Keep focal point unchanged
+    camera.setFocalPoint(...focalPoint);
+
+    // Optional but recommended: keep a consistent "up"
+    camera.setViewUp(0, -1, 0);
+
+    camera.modified();
+    renderer.resetCameraClippingRange();
+    renderWindow.render();
+  }
+
   function computeRAOAndCRAN(viewDirection) {
     const [x, y, z] = viewDirection;
 
@@ -191,8 +243,6 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
 
     const { viewVector } = getCameraViewAngles(renderer);
 
-    console.log(viewVector)
-
     // Ensure latest frame is rendered
     renderWindow.render();
 
@@ -204,9 +254,6 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
         user_id: userId,
         patient_id: patientId,
         view_vector: viewVector,
-        camera_position: cam.position,
-        camera_focal_point: cam.focalPoint,
-        camera_view_up: cam.viewUp,
         screenshot: screenshot,
       },
     ]);
@@ -236,11 +283,13 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
           onClick={onPrevious}
           disabled={isFirst}
         >
-          Previous
+          Previous case
         </button>
+        <button onClick={handleReset}>Reset view</button>
+        <button onClick={handleInvert}>Invert view</button>
         <button onClick={saveAnnotation}>Save view</button>
         <button onClick={onNext}>
-          {isLast ? "Finish" : "Next"}
+          {isLast ? "Finish" : "Next case"}
         </button>
       </div>
 

@@ -11,10 +11,12 @@ export default function FormModal({ onSubmit }) {
     orcid: "",
     institution: "",
     yearsOfExperience: null,
+    percentOfAneurysms: null,
     department: "",
     city: "",
     country: "",
     consent: false,
+    anonymous: false,
   });
 
   const [loading, setLoading] = useState(false);
@@ -52,9 +54,17 @@ export default function FormModal({ onSubmit }) {
 
     if (name === "yearsOfExperience") {
       if (value < 0) {
-        newErrors.yearsOfExperience = "Must be ≥ 0";
+        newErrors.yearsOfExperience = "Must be 0 or more";
       } else {
         delete newErrors.yearsOfExperience;
+      }
+    }
+
+    if (name === "percentOfAneurysms") {
+      if (value < 0) {
+        newErrors.percentOfAneurysms = "Must be between 0 and 100 percent";
+      } else {
+        delete newErrors.percentOfAneurysms;
       }
     }
 
@@ -87,6 +97,7 @@ export default function FormModal({ onSubmit }) {
       email: formData.email,
       orcid: formData.orcid || null,
       yearsofexperience: formData.yearsOfExperience,
+      percentofaneurysms: formData.percentOfAneurysms,
       institution: formData.institution,
       department: formData.department,
       city: formData.city,
@@ -120,15 +131,38 @@ export default function FormModal({ onSubmit }) {
 
        <form className="form" onSubmit={handleSubmit}>
         <div className="form-content">
+          <h3>Experience</h3>
+
+          <label>Years of experience</label>
+          <input name="yearsofexperience" placeholder="5" onChange={handleChange} required/>
+          {errors.yearsOfExperience && <p className="error">{errors.yearsOfExperience}</p>}
+
+          <label>What percentage of your treatments involve cerebral aneurysms?</label>
+          <input name="percentofaneurysms" placeholder="50" onChange={handleChange} required/>
+          {errors.percentOfAneurysms && <p className="error">{errors.percentOfAneurysms}</p>}
+
+          <label className="checkbox-label">
+            <input 
+              type="checkbox" 
+              name="anonymous" 
+              onChange={handleChange} 
+            />
+            <span>
+              I wish to remain anonymous.
+            </span>
+          </label>
+
+      {!formData.anonymous && (
+        <>
           <h3>Personal Information</h3>
 
-          <label>First Name</label>
+          <label>First name</label>
           <input name="firstName" placeholder="John" onChange={handleChange} required />
 
           <label>Initials</label>
           <input name="initials" placeholder="J.D." onChange={handleChange} required />
 
-          <label>Last Name</label>
+          <label>Last name</label>
           <input name="lastName" placeholder="Doe" onChange={handleChange} required />
 
           <label>Email</label>
@@ -136,10 +170,6 @@ export default function FormModal({ onSubmit }) {
           {errors.email && <p className="error">{errors.email}</p>}
 
           <h3>Professional Information</h3>
-
-          <label>Years of Experience</label>
-          <input name="yearsofexperience" placeholder="5" onChange={handleChange} required/>
-          {errors.yearsOfExperience && <p className="error">{errors.yearsOfExperience}</p>}
 
           <label>Institution</label>
           <input name="institution" placeholder="Technical University of Eindhoven" onChange={handleChange} required/>
@@ -156,8 +186,10 @@ export default function FormModal({ onSubmit }) {
           <label>ORCID</label>
           <input name="orcid" placeholder="0000-0000-0000-0000" onChange={handleChange} />
           {errors.orcid && <p className="error">{errors.orcid}</p>}
+        </>
+      )}
 
-          <label className="consent">
+          <label className="checkbox-label required">
             <input 
               type="checkbox" 
               name="consent" 
