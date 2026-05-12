@@ -6,7 +6,7 @@ import TaskModal from './components/TaskModal';
 import FinishModal from './components/FinishModal';
 
   
-const PATIENTS = ["C0001", "C0002", "C0003", "C0004"]; // TODO: Make this dynamic
+const PATIENTS = ["C0001", "C0002", "C0003", "C0004", "C0005"]; // TODO: Make this dynamic
 
 const NUMBER_OF_PATIENTS = parseInt(process.env.REACT_APP_NUMBER_OF_PATIENTS || 3);
 
@@ -28,6 +28,12 @@ function App() {
       setStep("finish");
     } else {
       setPatientIndex((i) => i + 1);
+    }
+  };
+
+  const previousPatient = () => {
+    if (patientIndex > 0) {
+      setPatientIndex((i) => i - 1);
     }
   };
 
@@ -54,7 +60,9 @@ function App() {
           userId={userId}
           patientId={currentPatient}
           onNext={nextPatient}
+          onPrevious={previousPatient}
           isLast={completedPatients.length + 1 >= NUMBER_OF_PATIENTS}
+          isFirst={patientIndex === 0}
         />
       )}
 

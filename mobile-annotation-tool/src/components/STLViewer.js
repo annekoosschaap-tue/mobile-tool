@@ -117,14 +117,68 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
 
   const setCameraState = (state) => {
     const camera = cameraRef.current;
+    const renderer = rendererRef.current;
     const renderWindow = renderWindowRef.current;
 
-    camera.setPosition(...state.position);
-    camera.setFocalPoint(...state.focalPoint);
-    camera.setViewUp(...state.viewUp);
+    // Assume focal point is always [0, 0, 0]
+    const focalPoint = [0, 0, 0];
 
+    const cameraPosition = [
+      focalPoint[0] - state.viewVector[0],
+      focalPoint[1] - state.viewVector[1],
+      focalPoint[2] - state.viewVector[2],
+    ];
+
+    camera.setPosition(...cameraPosition);
+
+    camera.setFocalPoint(...focalPoint);
+
+    renderer.resetCamera();
     renderWindow.render();
   };
+
+  function getCameraViewAngles(renderer) {
+    const camera = renderer.getActiveCamera();
+
+    const position = camera.getPosition();
+    const focalPoint = camera.getFocalPoint();
+    const viewUp = camera.getViewUp();
+
+    // Calculate view direction vector
+    const viewDirection = [
+      focalPoint[0] - position[0],
+      focalPoint[1] - position[1],
+      focalPoint[2] - position[2],
+    ];
+
+    const norm = Math.sqrt(
+      viewDirection.reduce((sum, val) => sum + val * val, 0)
+    );
+
+    const normalizedDirection = viewDirection.map(
+      (val) => val / norm
+    );
+
+    return {
+      position,
+      focalPoint,
+      viewUp,
+      viewVector: normalizedDirection,
+    };
+  }
+
+  function computeRAOAndCRAN(viewDirection) {
+    const [x, y, z] = viewDirection;
+
+    // Compute RAO and CRAN in degrees
+    const rao = Math.atan2(x, z) * 180 / Math.PI;   // positive x = RAO, negative x = LAO
+    const cran = Math.atan2(y, Math.sqrt(x*x + z*z)) * 180 / Math.PI;   // positive y = CRAN, negative y = CAUD
+
+    return {
+      rao: parseFloat(rao.toFixed(1)),
+      cran: parseFloat(cran.toFixed(1))
+    };
+  }
 
   // ---------------------------
   // Annotation actions
@@ -133,6 +187,11 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
     const cam = getCameraState();
 
     const renderWindow = renderWindowRef.current;
+    const renderer = rendererRef.current;
+
+    const { viewVector } = getCameraViewAngles(renderer);
+
+    console.log(viewVector)
 
     // Ensure latest frame is rendered
     renderWindow.render();
@@ -144,6 +203,7 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
       {
         user_id: userId,
         patient_id: patientId,
+        view_vector: viewVector,
         camera_position: cam.position,
         camera_focal_point: cam.focalPoint,
         camera_view_up: cam.viewUp,
@@ -192,9 +252,7 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
             className="annotation-card"
             onClick={() =>
               setCameraState({
-                position: a.camera_position,
-                focalPoint: a.camera_focal_point,
-                viewUp: a.camera_view_up,
+                viewVector: a.view_vector,
               })
             }
           >
