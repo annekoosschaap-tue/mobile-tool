@@ -147,3 +147,75 @@ code {
   content: " *";
   color: red;
 }
+
+.bottom-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+
+  width: 100%;
+  height: 140px;
+
+  background: rgba(255,255,255,0.95);
+
+  display: flex;
+  gap: 12px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  padding: 12px;
+
+  z-index: 1000;
+}
+
+.annotation-card {
+  position: relative;
+
+  min-width: 160px;
+  height: 100px;
+
+  border-radius: 8px;
+
+  overflow: hidden;
+
+  cursor: pointer;
+
+  border: 1px solid #ccc;
+
+  flex-shrink: 0;
+
+  transition: transform 0.15s ease;
+}
+
+.annotation-card:hover {
+  transform: scale(1.03);
+}
+
+.annotation-thumbnail {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.delete-annotation {
+  position: absolute;
+
+  top: 6px;
+  right: 6px;
+
+  width: 24px;
+  height: 24px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: rgba(0,0,0,0.7);
+  color: white;
+
+  cursor: pointer;
+
+  font-size: 16px;
+  line-height: 1;
+}

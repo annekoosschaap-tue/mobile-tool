@@ -10,7 +10,7 @@ import vtkSTLReader from "@kitware/vtk.js/IO/Geometry/STLReader";
 import vtkPolyDataNormals from "@kitware/vtk.js/Filters/Core/PolyDataNormals";
 import vtkFullScreenRenderWindow from "@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow";
 
-function STLViewer({ userId, patientId, onNext, isLast }) {
+function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
   const containerRef = useRef(null);
 
   const [annotations, setAnnotations] = useState([]);
@@ -132,15 +132,28 @@ function STLViewer({ userId, patientId, onNext, isLast }) {
   const saveAnnotation = async () => {
     const cam = getCameraState();
 
-    await supabase.from("annotations").insert([
+    const renderWindow = renderWindowRef.current;
+
+    // Ensure latest frame is rendered
+    renderWindow.render();
+
+    // Capture screenshot from vtk.js
+    const screenshot = await renderWindow.captureImages()[0];
+
+    const { error } = await supabase.from("annotations").insert([
       {
         user_id: userId,
         patient_id: patientId,
         camera_position: cam.position,
         camera_focal_point: cam.focalPoint,
         camera_view_up: cam.viewUp,
+        screenshot: screenshot,
       },
     ]);
+
+    if (error) {
+      console.error(error);
+    }
 
     fetchAnnotations();
   };
@@ -159,30 +172,48 @@ function STLViewer({ userId, patientId, onNext, isLast }) {
 
       {/* Controls */}
       <div className="viewer-controls">
+        <button
+          onClick={onPrevious}
+          disabled={isFirst}
+        >
+          Previous
+        </button>
         <button onClick={saveAnnotation}>Save view</button>
         <button onClick={onNext}>
-          {isLast ? "Finish" : "Next patient"}
+          {isLast ? "Finish" : "Next"}
         </button>
       </div>
 
       {/* Bottom sheet */}
       <div className="bottom-sheet">
         {annotations.map((a) => (
-          <div key={a.id} className="annotation-item">
-            <button
-              onClick={() =>
-                setCameraState({
-                  position: a.camera_position,
-                  focalPoint: a.camera_focal_point,
-                  viewUp: a.camera_view_up,
-                })
-              }
-            >
-              Recall
-            </button>
+          <div
+            key={a.id}
+            className="annotation-card"
+            onClick={() =>
+              setCameraState({
+                position: a.camera_position,
+                focalPoint: a.camera_focal_point,
+                viewUp: a.camera_view_up,
+              })
+            }
+          >
+            {/* Thumbnail */}
+            <img
+              src={a.screenshot}
+              alt="Saved projection"
+              className="annotation-thumbnail"
+            />
 
-            <button onClick={() => deleteAnnotation(a.id)}>
-              Delete
+            {/* Delete button */}
+            <button
+              className="delete-annotation"
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteAnnotation(a.id);
+              }}
+            >
+              ×
             </button>
           </div>
         ))}
