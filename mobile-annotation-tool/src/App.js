@@ -16,25 +16,20 @@ function App() {
   const [userId, setUserId] = useState(null);
 
   const [patientIndex, setPatientIndex] = useState(0);
-  const [completedPatients, setCompletedPatients] = useState([]);
 
   const currentPatient = PATIENTS[patientIndex];
 
   const nextPatient = () => {
-    const updated = [...completedPatients, currentPatient];
-    setCompletedPatients(updated);
-
-    if (updated.length >= NUMBER_OF_PATIENTS) {
+    if (patientIndex + 1 >= NUMBER_OF_PATIENTS) {
       setStep("finish");
-    } else {
-      setPatientIndex((i) => i + 1);
+      return;
     }
+
+    setPatientIndex((i) => i + 1);
   };
 
   const previousPatient = () => {
-    if (patientIndex > 0) {
-      setPatientIndex((i) => i - 1);
-    }
+    setPatientIndex((i) => Math.max(0, i - 1));
   };
 
   return (
@@ -61,7 +56,7 @@ function App() {
           patientId={currentPatient}
           onNext={nextPatient}
           onPrevious={previousPatient}
-          isLast={completedPatients.length + 1 >= NUMBER_OF_PATIENTS}
+          isLast={patientIndex >= NUMBER_OF_PATIENTS - 1}
           isFirst={patientIndex === 0}
         />
       )}
