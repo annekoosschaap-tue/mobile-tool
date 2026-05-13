@@ -105,20 +105,27 @@ export default function FormModal({ onSubmit }) {
       consent: formData.consent,
     };
 
-    const { error } = await supabase
-      .from("users")
-      .insert([newSubmission]);
+    console.log(formData)
 
-    setLoading(false);
+    const { data, error } = await supabase
+      .from("users")
+      .insert([newSubmission])
+      .select("id")
+      .single();
 
     if (error) {
       console.error("Failed to save user", error);
       setErrorMsg("Submission failed. Please try again.");
+      setLoading(false);
       return;
     }
 
-    // Pass user ID upward #TODO: Make this a useful user_id
-    const userId = "0";
+    const userId = data.id;
+
+    console.log("User ID:", userId);
+
+    setLoading(false);
+
     onSubmit(userId);
   };
 
