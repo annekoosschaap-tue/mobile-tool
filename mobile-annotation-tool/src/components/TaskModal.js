@@ -8,25 +8,19 @@ export default function TaskModal({ onContinue }) {
         </header>
 
         <div className="form-content">
-          <h3>Welcome</h3>
+        <h3>Welcome</h3>
 
-          <p>
-            In the next step, you will interact with a 3D model.
-            Your task is to carefully inspect the structure and perform
-            the required annotation.
-          </p>
+        <p>
+          In the next step, you will interact with 3D vascular models from several patient cases. Each case contains one or more aneurysms.
+        </p>
 
-          <h3>Instructions</h3>
+        <p>
+          Your task is to select one or more viewing projections that you would use during an aneurysm coiling procedure. You can store multiple views, review them later, and delete or adjust them if needed. You may also return to previous patients at any time during the session.
+        </p>
 
-          <ul>
-            <li>Rotate and inspect the 3D model</li>
-            <li>Follow the annotation guidelines</li>
-            <li>Take your time — accuracy is important</li>
-          </ul>
-
-          <p>
-            Click continue when you are ready to start.
-          </p>
+        <p>
+          Click continue when you are ready to begin.
+        </p>
         </div>
 
         <div className="form-footer">
