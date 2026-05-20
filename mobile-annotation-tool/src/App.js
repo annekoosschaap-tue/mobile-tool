@@ -6,7 +6,12 @@ import TaskModal from './components/TaskModal';
 import FinishModal from './components/FinishModal';
 
   
-const PATIENTS = ["C0001", "C0002", "C0003", "C0004", "C0005"]; // TODO: Make this dynamic
+const PATIENTS = [
+  "C0001", "C0002", "C0003", "C0004", "C0005", "C0008",
+  "C0018", "C0035", "C0036", "C0037", "C0038", "C0039",
+  "C0040", "C0041", "C0042", "C0044", "C0049", "C0051",
+  "C0052", "C0053", "C0074", "C0075", "C0076"
+]; // TODO: Make this dynamic
 
 const NUMBER_OF_PATIENTS = parseInt(process.env.REACT_APP_NUMBER_OF_PATIENTS || 3);
 
@@ -54,6 +59,7 @@ function App() {
         <STLViewer
           userId={userId}
           patientId={currentPatient}
+          patientIndex={patientIndex}
           onNext={nextPatient}
           onPrevious={previousPatient}
           isLast={patientIndex >= NUMBER_OF_PATIENTS - 1}

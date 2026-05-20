@@ -14,7 +14,9 @@ import vtkOpenGLRenderWindow from "@kitware/vtk.js/Rendering/OpenGL/RenderWindow
 
 import vtkInteractorStyleArcballCamera from './InteractorStyleArcballCamera';
 
-function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
+const NUMBER_OF_PATIENTS = parseInt(process.env.REACT_APP_NUMBER_OF_PATIENTS || 3);
+
+function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast, isFirst }) {
   const containerRef = useRef(null);
 
   const [annotations, setAnnotations] = useState([]);
@@ -276,6 +278,10 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
   return (
     <div className="vtk-wrapper">
       <div ref={containerRef} className="vtk-container" />
+
+      <div className="patient-id-overlay">
+        Case ID: {patientId} ({patientIndex+1}/{NUMBER_OF_PATIENTS})
+      </div>
 
       {/* Controls */}
       <div className="viewer-controls">
