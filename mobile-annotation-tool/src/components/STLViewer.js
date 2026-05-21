@@ -11,8 +11,11 @@ import vtkPolyDataNormals from "@kitware/vtk.js/Filters/Core/PolyDataNormals";
 import vtkFullScreenRenderWindow from "@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow";
 import vtkRenderWindowInteractor from "@kitware/vtk.js/Rendering/Core/RenderWindowInteractor";
 import vtkOpenGLRenderWindow from "@kitware/vtk.js/Rendering/OpenGL/RenderWindow";
-
+import vtkXMLImageDataReader from "@kitware/vtk.js/IO/XML/XMLImageDataReader";
 import vtkInteractorStyleArcballCamera from './InteractorStyleArcballCamera';
+import vtkImageMarchingCubes from "@kitware/vtk.js/Filters/General/ImageMarchingCubes";
+import "@kitware/vtk.js/Rendering/Profiles/Geometry";
+import "@kitware/vtk.js/Rendering/Profiles/Volume";
 
 const NUMBER_OF_PATIENTS = parseInt(process.env.REACT_APP_NUMBER_OF_PATIENTS || 3);
 
@@ -25,6 +28,9 @@ function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast
   const rendererRef = useRef(null);
   const renderWindowRef = useRef(null);
   const cameraRef = useRef(null);
+
+  const marchingCubeRef = useRef(null);
+  const [scalarRange, setScalarRange] = useState([0, 1000]);
 
   // ---------------------------
   // Fetch annotations
@@ -54,7 +60,7 @@ function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast
     requestAnimationFrame(() => {
       if (!containerRef.current) return;
 
-      const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
+      fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
         rootContainer: containerRef.current,
         background: [0.1, 0.1, 0.1],
       });
@@ -70,17 +76,26 @@ function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast
       rendererRef.current = renderer;
       renderWindowRef.current = renderWindow;
 
-      const reader = vtkSTLReader.newInstance();
-      const mapper = vtkMapper.newInstance({ scalarVisibility: false });
+      const reader = vtkXMLImageDataReader.newInstance();
+
+      const marchingCube = vtkImageMarchingCubes.newInstance({
+        contourValue: 100,
+        computeNormals: true,
+        mergePoints: true,
+      });
+
+      marchingCube.setInputConnection(reader.getOutputPort());
+
+      const mapper = vtkMapper.newInstance();
+      mapper.setInputConnection(marchingCube.getOutputPort());
+
       const actor = vtkActor.newInstance();
-
-      const normals = vtkPolyDataNormals.newInstance();
-      normals.setInputConnection(reader.getOutputPort());
-
-      mapper.setInputConnection(normals.getOutputPort());
       actor.setMapper(mapper);
+      actor.getProperty().setColor(1, 1, 1);
 
       renderer.addActor(actor);
+
+      marchingCubeRef.current = marchingCube;
 
       const camera = renderer.getActiveCamera();
       camera.setPosition(0, 0, -1);
@@ -89,24 +104,47 @@ function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast
       camera.setParallelProjection(true);
       cameraRef.current = camera;
 
-      fetch(`${process.env.PUBLIC_URL}/cases/${patientId}.stl`)
+      fetch(`${process.env.PUBLIC_URL}/aneurisk-nifti/${patientId}/3DRA.vti`)
         .then((res) => {
-          if (!res.ok) {
-            throw new Error("Failed to load STL");
-          }
-
+          if (!res.ok) throw new Error("Failed to load VTI");
           return res.arrayBuffer();
         })
         .then((arrayBuffer) => {
+
           reader.parseAsArrayBuffer(arrayBuffer);
+
+          const imageData = reader.getOutputData(0);
+
+          console.log(
+            "Dimensions:",
+            imageData.getDimensions()
+          );
+
+          console.log(
+            "Bounds:",
+            imageData.getBounds()
+          );
+
+          const range =
+            imageData
+              .getPointData()
+              .getScalars()
+              .getRange();
+
+          console.log("Scalar range:", range);
+
+          setScalarRange(range);
+
+          const initialIso =
+            (range[0] + range[1]) / 3;
+
+          marchingCube.setContourValue(initialIso);
 
           renderer.resetCamera();
           renderWindow.render();
         })
-        .catch((err) => {
-          console.error(err);
-        });
-      });
+        .catch(console.error);
+    });
 
     return () => {
       if (fullScreenRenderer) {
@@ -114,6 +152,23 @@ function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast
       }
     };
   }, [patientId]);
+
+  function updateThreshold(value) {
+    const marchingCube =
+      marchingCubeRef.current;
+
+    const renderWindow =
+      renderWindowRef.current;
+
+    if (!marchingCube || !renderWindow)
+      return;
+
+    marchingCube.setContourValue(
+      Number(value)
+    );
+
+    renderWindow.render();
+  }
 
   // ---------------------------
   // Camera helpers
@@ -297,7 +352,26 @@ function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast
         <button onClick={onNext}>
           {isLast ? "Finish" : "Next case"}
         </button>
+
+        <input
+          type="range"
+          min={scalarRange[0]}
+          max={scalarRange[1]}
+          step="1"
+          defaultValue={
+            (scalarRange[0] +
+              scalarRange[1]) /
+            3
+          }
+          onChange={(e) =>
+            updateThreshold(
+              Number(e.target.value)
+            )
+          }
+        />
       </div>
+
+      
 
       {/* Bottom sheet */}
       <div className="bottom-sheet">
