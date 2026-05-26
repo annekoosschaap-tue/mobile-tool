@@ -3,6 +3,7 @@ import { supabase } from "./SupabaseClient";
 
 import "@kitware/vtk.js/favicon";
 import "@kitware/vtk.js/Rendering/Profiles/Geometry";
+import "@kitware/vtk.js/Rendering/Profiles/Volume";
 
 import vtkActor from "@kitware/vtk.js/Rendering/Core/Actor";
 import vtkMapper from "@kitware/vtk.js/Rendering/Core/Mapper";
@@ -14,10 +15,11 @@ import vtkOpenGLRenderWindow from "@kitware/vtk.js/Rendering/OpenGL/RenderWindow
 import vtkXMLImageDataReader from "@kitware/vtk.js/IO/XML/XMLImageDataReader";
 import vtkInteractorStyleArcballCamera from './InteractorStyleArcballCamera';
 import vtkImageMarchingCubes from "@kitware/vtk.js/Filters/General/ImageMarchingCubes";
-import "@kitware/vtk.js/Rendering/Profiles/Geometry";
-import "@kitware/vtk.js/Rendering/Profiles/Volume";
+import vtkBoundingBox from "@kitware/vtk.js/Common/DataModel/BoundingBox";
+
 
 const NUMBER_OF_PATIENTS = parseInt(process.env.REACT_APP_NUMBER_OF_PATIENTS || 3);
+const NUMBER_OF_PROJECTIONS = parseInt(process.env.REACT_APP_NUMBER_OF_ANNOTATIONS || 2);
 
 function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast, isFirst }) {
   const containerRef = useRef(null);
@@ -114,6 +116,17 @@ function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast
           reader.parseAsArrayBuffer(arrayBuffer);
 
           const imageData = reader.getOutputData(0);
+
+          // const sampleDistance =
+          //   0.7 *
+          //   Math.sqrt(
+          //     imageData
+          //       .getSpacing()
+          //       .map((v) => v * v)
+          //       .reduce((a, b) => a + b, 0)
+          //   );
+
+          // mapper.setSampleDistance(sampleDistance);
 
           console.log(
             "Dimensions:",
@@ -327,6 +340,9 @@ function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast
     fetchAnnotations();
   };
 
+  const canProceed =
+  annotations.length >= NUMBER_OF_PROJECTIONS;
+
   // ---------------------------
   // UI
   // ---------------------------
@@ -349,7 +365,10 @@ function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast
         <button onClick={handleReset}>Reset view</button>
         <button onClick={handleInvert}>Invert view</button>
         <button onClick={saveAnnotation}>Save view</button>
-        <button onClick={onNext}>
+        <button
+          onClick={onNext}
+          disabled={!canProceed}
+        >
           {isLast ? "Finish" : "Next case"}
         </button>
 

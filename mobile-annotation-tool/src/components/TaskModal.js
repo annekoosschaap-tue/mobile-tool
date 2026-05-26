@@ -1,3 +1,6 @@
+const NUMBER_OF_PATIENTS = parseInt(process.env.REACT_APP_NUMBER_OF_PATIENTS || 3);
+const NUMBER_OF_PROJECTIONS = parseInt(process.env.REACT_APP_NUMBER_OF_ANNOTATIONS || 2);
+
 export default function TaskModal({ onContinue }) {
   return (
     <div className="modal-overlay">
@@ -11,11 +14,15 @@ export default function TaskModal({ onContinue }) {
         <h3>Welcome</h3>
 
         <p>
-          In the next step, you will interact with 3D vascular models from several patient cases. Each case contains one or more aneurysms.
+          In the next step, you will explore 3D vascular models from {NUMBER_OF_PATIENTS} patient cases, each containing one or more aneurysms.
         </p>
 
         <p>
-          Your task is to select one or more viewing projections that you would use during an aneurysm coiling procedure. You can store multiple views, review them later, and delete or adjust them if needed. You may also return to previous patients at any time during the session.
+          Your task is to select at least {NUMBER_OF_PROJECTIONS} working projections for the highlighted aneurysm that you would use during a monoplane aneurysm coiling procedure. You do not need to consider C-arm physical constraints such as collision risks or unreachable positions.
+        </p>
+
+        <p>
+          You can save multiple projections, review them later, and edit or delete them at any time. You may also return to previous patient cases during the session.
         </p>
 
         <p>
