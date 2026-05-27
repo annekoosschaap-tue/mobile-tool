@@ -57,7 +57,7 @@ function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast
 
       fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
         rootContainer: containerRef.current,
-        background: [0.1, 0.1, 0.1],
+        background: [0.9, 0.9, 0.9],
       });
 
       const renderer = fullScreenRenderer.getRenderer();
@@ -94,8 +94,8 @@ function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast
       cameraRef.current = camera;
 
       Promise.all([
-        fetch(`${process.env.PUBLIC_URL}/cases/${patientId}.stl`),
-        fetch(`${process.env.PUBLIC_URL}/cases/${patientId}_aneurysm.stl`)
+        fetch(`${process.env.PUBLIC_URL}/cases/${patientId}_new00002.stl`),
+        fetch(`${process.env.PUBLIC_URL}/cases/${patientId}_new00001.stl`)
       ])
         .then(async ([vesselRes, aneurysmRes]) => {
           if (!vesselRes.ok) throw new Error("Failed vessel STL");
@@ -115,7 +115,7 @@ function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast
 
           const vesselActor = vtkActor.newInstance();
           vesselActor.setMapper(vesselMapper);
-          vesselActor.getProperty().setColor(0.85, 0.85, 0.85);
+          vesselActor.getProperty().setColor(9/255, 94/255, 215/255);
           vesselActor.getProperty().setOpacity(1.0);
 
           const aneurysmReader = vtkSTLReader.newInstance();
@@ -126,7 +126,7 @@ function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast
 
           const aneurysmActor = vtkActor.newInstance();
           aneurysmActor.setMapper(aneurysmMapper);
-          aneurysmActor.getProperty().setColor(1.0, 0.2, 0.1);
+          aneurysmActor.getProperty().setColor(200/255, 25/255, 25/255);
           aneurysmActor.getProperty().setOpacity(1.0);
           aneurysmActor.getProperty().setSpecular(0.6);
           aneurysmActor.getProperty().setSpecularPower(20);
