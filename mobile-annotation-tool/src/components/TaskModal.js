@@ -1,8 +1,7 @@
 const NUMBER_OF_PATIENTS = parseInt(process.env.REACT_APP_NUMBER_OF_PATIENTS || 3);
 const NUMBER_OF_PROJECTIONS = parseInt(process.env.REACT_APP_NUMBER_OF_ANNOTATIONS || 2);
-const TREATMENT_TYPE = process.env.REACT_APP_TREATMENT_TYPE;
 
-export default function TaskModal({ onContinue }) {
+export default function TaskModal({ treatmentType, onContinue }) {
   return (
     <div className="modal-overlay">
       <div className="modal">
@@ -19,7 +18,7 @@ export default function TaskModal({ onContinue }) {
         </p>
 
         <p>
-          Your task is to select at least {NUMBER_OF_PROJECTIONS} suitable working projections for the aneurysm highlighted in red that you would use during a monoplane {TREATMENT_TYPE} procedure. You do not need to consider C-arm physical constraints such as collision risks or unreachable positions.
+          Your task is to select at least {NUMBER_OF_PROJECTIONS} suitable working projections for the aneurysm highlighted in red that you would use during a monoplane {treatmentType} procedure. You do not need to consider C-arm physical constraints such as collision risks or unreachable positions.
         </p>
 
         <p>

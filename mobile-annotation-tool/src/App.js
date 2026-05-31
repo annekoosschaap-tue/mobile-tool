@@ -11,19 +11,17 @@ import FinishModal from './components/FinishModal';
 const NUMBER_OF_PATIENTS = parseInt(process.env.REACT_APP_NUMBER_OF_PATIENTS || 3);
 
 function App() {
-  const TREATMENT_TYPE = process.env.REACT_APP_TREATMENT_TYPE;
 
-  const TREATMENT_COLUMN_MAP = {
+  const TREATMENT_TEXT_MAP = {
     "coiling": "coiling",
-    "stent-assisted coiling": "stent_assisted_coiling",
-    "flow diverter": "flow_diverter",
-    "intrasaccular device": "intrasaccular_device",
+    "stent_assisted_coiling": "stent-assisted coiling",
+    "flow_diverter": "flow diverter",
+    "intrasaccular_device": "intrasaccular device",
   };
-
-  const TREATMENT_COLUMN = TREATMENT_COLUMN_MAP[TREATMENT_TYPE];
 
   const [step, setStep] = useState("form");
   const [userId, setUserId] = useState(null);
+  const [treatmentType, setTreatmentType] = useState(null);
   const [patientIndex, setPatientIndex] = useState(0);
 
   const [patients, setPatients] = useState([]);
@@ -31,36 +29,53 @@ function App() {
 
   const currentPatient = patients[patientIndex];
 
+  const TREATMENT_TEXT = treatmentType
+  ? TREATMENT_TEXT_MAP[treatmentType]
+  : null;
+
+  useEffect(() => {
+    async function loadTreatmentType() {
+      const { data, error } = await supabase
+        .rpc("count_users_by_treatment_type");
+
+      if (error) {
+        console.error("Error counting treatment types:", error);
+        return;
+      }
+
+      setTreatmentType(data[0].treatment_type);
+    }
+
+    loadTreatmentType();
+  }, []);
+
   useEffect(() => {
     const fetchPatients = async () => {
-      if (!TREATMENT_COLUMN) {
-        console.error("Invalid treatment type:", TREATMENT_TYPE);
+      if (!TREATMENT_TEXT) {
+        console.error("Invalid treatment type:", treatmentType);
         return;
       }
 
       setLoadingPatients(true);
 
       const { data, error } = await supabase
-        .from("patients")
-        .select("id")
-        .eq("coiling", true);
+        .rpc("get_patients_by_annotation_count", {
+          p_treatment_type: treatmentType,
+        });
 
       if (error) {
-        console.error("Error fetching patients:", error);
-        setPatients([]);
+        console.error(error);
       } else {
-        setPatients(data.map((p) => p.id));
+        setPatients(data.map((p) => p.patient_id));
       }
 
-      console.log(data)
-      console.log(TREATMENT_COLUMN)
-      console.log(TREATMENT_TYPE)
+      console.log(patients)
 
       setLoadingPatients(false);
     };
 
     fetchPatients();
-  }, [TREATMENT_COLUMN]);
+  }, [treatmentType]);
 
   if (loadingPatients) {
     return <div>Loading patients...</div>;
@@ -88,6 +103,7 @@ function App() {
 
       {step === "form" && (
         <FormModal
+          treatmentType={TREATMENT_TEXT}
           onSubmit={(id) => {
             setUserId(id);
             setStep("instructions");
@@ -97,6 +113,7 @@ function App() {
 
       {step === "instructions" && (
         <TaskModal
+          treatmentType={TREATMENT_TEXT}
           onContinue={() => setStep("viewer")}
         />
       )}
@@ -106,6 +123,7 @@ function App() {
           userId={userId}
           patientId={currentPatient}
           patientIndex={patientIndex}
+          treatmentType={treatmentType}
           onNext={nextPatient}
           onPrevious={previousPatient}
           isLast={patientIndex >= NUMBER_OF_PATIENTS - 1}
@@ -116,8 +134,8 @@ function App() {
       {step === "finish" && (
         <FinishModal
           userId={userId}
-          onSelectPatient={(patientId) => {
-            setPatientIndex(patients.indexOf(patientId));
+          onSelectPatient={(patientIndex) => {
+            setPatientIndex(patientIndex);
             setStep("viewer");
           }}
         />
