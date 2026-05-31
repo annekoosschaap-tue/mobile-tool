@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "./SupabaseClient";
 import "./styles.css";
 
-export default function FormModal({ treatmentType, onSubmit }) {
+export default function FormModal({ treatmentTypeText, treatmentType, onSubmit }) {
   const [formData, setFormData] = useState({
     firstName: "",
     initials: "",
@@ -104,7 +104,7 @@ export default function FormModal({ treatmentType, onSubmit }) {
       city: formData.city,
       country: formData.country,
       consent: formData.consent,
-      treatment_type: process.env.REACT_APP_TREATMENT_TYPE,
+      treatment_type: formData.treatment_type,
     };
 
     console.log("New submission:", newSubmission)
