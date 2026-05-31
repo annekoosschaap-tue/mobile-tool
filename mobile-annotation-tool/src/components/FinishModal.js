@@ -22,17 +22,35 @@ function FinishModal({ userId, onSelectCase }) {
   }, []);
 
   return (
-    <div>
-      <h2>Finished 🎉</h2>
+    <div className="modal-overlay">
+      <div className="modal">
 
-      {summary.map(([patientId, count]) => (
-        <div key={patientId}>
-          <span>{patientId} — {count} annotations</span>
-          <button onClick={() => onSelectCase(patientId)}>
-            Annotate again
-          </button>
+        <header className="header">
+          Overview
+        </header>
+
+        <div className="form-content">
+        <h3>Finished</h3>
+
+        <p>
+          You have finished all cases. Thank you for participating!
+        </p>
+
+        <p>
+          Below you will find an overview of all the saved working projections per case.
+        </p>
+
+        {/* {summary.map(([patientId, count]) => (
+          <div key={patientId}>
+            <span>{patientId} — {count} annotations</span>
+            <button onClick={() => onSelectCase(patientId)}>
+              Annotate again
+            </button>
+          </div>
+        ))} */}
         </div>
-      ))}
+
+      </div>
     </div>
   );
 }

@@ -11,10 +11,21 @@ import vtkPolyDataNormals from "@kitware/vtk.js/Filters/Core/PolyDataNormals";
 import vtkFullScreenRenderWindow from "@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow";
 import vtkRenderWindowInteractor from "@kitware/vtk.js/Rendering/Core/RenderWindowInteractor";
 import vtkOpenGLRenderWindow from "@kitware/vtk.js/Rendering/OpenGL/RenderWindow";
-
 import vtkInteractorStyleArcballCamera from './InteractorStyleArcballCamera';
 
-function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
+
+const NUMBER_OF_PATIENTS = parseInt(process.env.REACT_APP_NUMBER_OF_PATIENTS || 3);
+const NUMBER_OF_PROJECTIONS = parseInt(process.env.REACT_APP_NUMBER_OF_ANNOTATIONS || 2);
+const TREATMENT_TYPE = process.env.REACT_APP_TREATMENT_TYPE;
+const TREATMENT_COLUMN_MAP = {
+    "coiling": "coiling",
+    "stent-assisted coiling": "stent_assisted_coiling",
+    "flow diverter": "flow_diverter",
+    "intrasaccular device": "intrasaccular_device",
+  };
+const TREATMENT_COLUMN = TREATMENT_COLUMN_MAP[TREATMENT_TYPE];
+
+function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast, isFirst }) {
   const containerRef = useRef(null);
 
   const [annotations, setAnnotations] = useState([]);
@@ -52,9 +63,9 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
     requestAnimationFrame(() => {
       if (!containerRef.current) return;
 
-      const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
+      fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
         rootContainer: containerRef.current,
-        background: [0.1, 0.1, 0.1],
+        background: [0.9, 0.9, 0.9],
       });
 
       const renderer = fullScreenRenderer.getRenderer();
@@ -69,34 +80,118 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
       renderWindowRef.current = renderWindow;
 
       const reader = vtkSTLReader.newInstance();
-      const mapper = vtkMapper.newInstance({ scalarVisibility: false });
+
+      const mapper = vtkMapper.newInstance();
+
       const actor = vtkActor.newInstance();
 
       const normals = vtkPolyDataNormals.newInstance();
       normals.setInputConnection(reader.getOutputPort());
 
       mapper.setInputConnection(normals.getOutputPort());
+
       actor.setMapper(mapper);
 
       renderer.addActor(actor);
 
       const camera = renderer.getActiveCamera();
-      camera.setPosition(0, 0, -1);
+      camera.setPosition(-1, 0, 0);
       camera.setFocalPoint(0, 0, 0);
-      camera.setViewUp(0, -1, 0);
+      camera.setViewUp(0, 0, 1);
       camera.setParallelProjection(true);
       cameraRef.current = camera;
 
-      fetch(`${process.env.PUBLIC_URL}/cases/${patientId}.stl`)
-        .then((res) => {
-          if (!res.ok) {
-            throw new Error("Failed to load STL");
+      Promise.allSettled([
+        fetch(`${process.env.PUBLIC_URL}/cases/${patientId}_seg00002.stl`), // vessels
+        fetch(`${process.env.PUBLIC_URL}/cases/${patientId}_seg00001.stl`), // aneurysm 1
+        fetch(`${process.env.PUBLIC_URL}/cases/${patientId}_seg00003.stl`)  // aneurysm 2 (optional)
+      ])
+        .then(async ([vesselResult, aneurysm1Result, aneurysm2Result]) => {
+          if (
+            vesselResult.status !== "fulfilled" ||
+            !vesselResult.value.ok
+          ) {
+            throw new Error("Failed vessel STL");
           }
 
-          return res.arrayBuffer();
+          if (
+            aneurysm1Result.status !== "fulfilled" ||
+            !aneurysm1Result.value.ok
+          ) {
+            throw new Error("Failed aneurysm STL");
+          }
+
+          const vesselBuffer = await vesselResult.value.arrayBuffer();
+          const aneurysm1Buffer = await aneurysm1Result.value.arrayBuffer();
+
+          let aneurysm2Buffer = null;
+          if (
+            aneurysm2Result.status === "fulfilled" &&
+            aneurysm2Result.value.ok
+          ) {
+            aneurysm2Buffer = await aneurysm2Result.value.arrayBuffer();
+          }
+
+          return { vesselBuffer, aneurysm1Buffer, aneurysm2Buffer };
         })
-        .then((arrayBuffer) => {
-          reader.parseAsArrayBuffer(arrayBuffer);
+        .then(({ vesselBuffer, aneurysm1Buffer, aneurysm2Buffer }) => {
+          // Vessel
+          const vesselReader = vtkSTLReader.newInstance();
+          vesselReader.parseAsArrayBuffer(vesselBuffer);
+
+          const vesselMapper = vtkMapper.newInstance();
+          vesselMapper.setInputConnection(vesselReader.getOutputPort());
+
+          const vesselActor = vtkActor.newInstance();
+          vesselActor.setMapper(vesselMapper);
+          vesselActor.getProperty().setColor(9 / 255, 94 / 255, 215 / 255);
+
+          renderer.addActor(vesselActor);
+
+          // Aneurysm 1 (red)
+          const aneurysm1Reader = vtkSTLReader.newInstance();
+          aneurysm1Reader.parseAsArrayBuffer(aneurysm1Buffer);
+
+          const aneurysm1Mapper = vtkMapper.newInstance();
+          aneurysm1Mapper.setInputConnection(
+            aneurysm1Reader.getOutputPort()
+          );
+
+          const aneurysm1Actor = vtkActor.newInstance();
+          aneurysm1Actor.setMapper(aneurysm1Mapper);
+          aneurysm1Actor.getProperty().setColor(
+            200 / 255,
+            25 / 255,
+            25 / 255
+          );
+          aneurysm1Actor.getProperty().setSpecular(0.6);
+          aneurysm1Actor.getProperty().setSpecularPower(20);
+
+          renderer.addActor(aneurysm1Actor);
+
+          // Optional aneurysm 2 (turquoise)
+          if (aneurysm2Buffer) {
+            console.log("aneurysm 2 detected");
+            const aneurysm2Reader = vtkSTLReader.newInstance();
+            aneurysm2Reader.parseAsArrayBuffer(aneurysm2Buffer);
+
+            const aneurysm2Mapper = vtkMapper.newInstance();
+            aneurysm2Mapper.setInputConnection(
+              aneurysm2Reader.getOutputPort()
+            );
+
+            const aneurysm2Actor = vtkActor.newInstance();
+            aneurysm2Actor.setMapper(aneurysm2Mapper);
+            aneurysm2Actor.getProperty().setColor(
+              64 / 255,
+              224 / 255,
+              208 / 255
+            ); // turquoise
+            aneurysm2Actor.getProperty().setSpecular(0.6);
+            aneurysm2Actor.getProperty().setSpecularPower(20);
+
+            renderer.addActor(aneurysm2Actor);
+          }
 
           renderer.resetCamera();
           renderWindow.render();
@@ -106,12 +201,13 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
         });
       });
 
-    return () => {
-      if (fullScreenRenderer) {
-        fullScreenRenderer.delete();
-      }
-    };
-  }, [patientId]);
+        return () => {
+          if (fullScreenRenderer) {
+            fullScreenRenderer.delete();
+          }
+        };
+      }, [patientId]);
+
 
   // ---------------------------
   // Camera helpers
@@ -183,9 +279,9 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
     const renderWindow = renderWindowRef.current;
 
     // Reset to initial camera view (manual or default)
-    camera.setPosition(0, 0, -1);
+    camera.setPosition(-1, 0, 0);
     camera.setFocalPoint(0, 0, 0);
-    camera.setViewUp(0, -1, 0);
+    camera.setViewUp(0, 0, 1);
     renderer.resetCamera()
     renderWindow.render();
   }
@@ -254,6 +350,7 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
         user_id: userId,
         patient_id: patientId,
         view_vector: viewVector,
+        treatment_type: TREATMENT_TYPE,
         screenshot: screenshot,
       },
     ]);
@@ -270,12 +367,19 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
     fetchAnnotations();
   };
 
+  const canProceed =
+  annotations.length >= NUMBER_OF_PROJECTIONS;
+
   // ---------------------------
   // UI
   // ---------------------------
   return (
     <div className="vtk-wrapper">
       <div ref={containerRef} className="vtk-container" />
+
+      <div className="patient-id-overlay">
+        Case ID: {patientId} ({patientIndex+1}/{NUMBER_OF_PATIENTS}), treatment: {TREATMENT_COLUMN}, monoplane projections: ({annotations.length}/{NUMBER_OF_PROJECTIONS}) 
+      </div>
 
       {/* Controls */}
       <div className="viewer-controls">
@@ -288,10 +392,14 @@ function STLViewer({ userId, patientId, onNext, onPrevious, isLast, isFirst }) {
         <button onClick={handleReset}>Reset view</button>
         <button onClick={handleInvert}>Invert view</button>
         <button onClick={saveAnnotation}>Save view</button>
-        <button onClick={onNext}>
+        <button
+          onClick={onNext}
+          disabled={!canProceed}
+        >
           {isLast ? "Finish" : "Next case"}
         </button>
       </div>
+
 
       {/* Bottom sheet */}
       <div className="bottom-sheet">

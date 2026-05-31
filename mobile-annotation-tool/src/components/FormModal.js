@@ -17,6 +17,7 @@ export default function FormModal({ onSubmit }) {
     country: "",
     consent: false,
     anonymous: false,
+    treatment_type: process.env.REACT_APP_TREATMENT_TYPE,
   });
 
   const [loading, setLoading] = useState(false);
@@ -91,21 +92,23 @@ export default function FormModal({ onSubmit }) {
     setErrorMsg("");
 
     const newSubmission = {
-      firstname: formData.firstName,
+      first_name: formData.firstName,
       initials: formData.initials,
       lastname: formData.lastName,
       email: formData.email,
       orcid: formData.orcid || null,
-      yearsofexperience: formData.yearsOfExperience,
-      percentofaneurysms: formData.percentOfAneurysms,
+      years_of_experience: formData.yearsOfExperience,
+      percent_of_aneurysms: formData.percentOfAneurysms,
       institution: formData.institution,
       department: formData.department,
       city: formData.city,
       country: formData.country,
       consent: formData.consent,
+      treatment_type: process.env.REACT_APP_TREATMENT_TYPE,
     };
 
-    console.log(formData)
+    console.log("New submission:", newSubmission)
+    console.log("Form data:", formData)
 
     const { data, error } = await supabase
       .from("users")
@@ -141,11 +144,11 @@ export default function FormModal({ onSubmit }) {
           <h3>Experience</h3>
 
           <label>Years of experience</label>
-          <input name="yearsofexperience" placeholder="5" onChange={handleChange} required/>
+          <input name="yearsOfExperience" placeholder="5" onChange={handleChange} required/>
           {errors.yearsOfExperience && <p className="error">{errors.yearsOfExperience}</p>}
 
           <label>What percentage of your treatments involve cerebral aneurysms?</label>
-          <input name="percentofaneurysms" placeholder="50" onChange={handleChange} required/>
+          <input name="percentOfAneurysms" placeholder="50" onChange={handleChange} required/>
           {errors.percentOfAneurysms && <p className="error">{errors.percentOfAneurysms}</p>}
 
           <label className="checkbox-label">
