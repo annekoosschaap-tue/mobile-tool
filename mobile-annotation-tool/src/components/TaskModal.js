@@ -19,7 +19,7 @@ export default function TaskModal({ onContinue }) {
         </p>
 
         <p>
-          Your task is to select at least {NUMBER_OF_PROJECTIONS} working projections for the highlighted aneurysm that you would use during a monoplane {TREATMENT_TYPE} procedure. You do not need to consider C-arm physical constraints such as collision risks or unreachable positions.
+          Your task is to select at least {NUMBER_OF_PROJECTIONS} suitable working projections for the aneurysm highlighted in red that you would use during a monoplane {TREATMENT_TYPE} procedure. You do not need to consider C-arm physical constraints such as collision risks or unreachable positions.
         </p>
 
         <p>
