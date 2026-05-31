@@ -103,7 +103,8 @@ function App() {
 
       {step === "form" && (
         <FormModal
-          treatmentType={TREATMENT_TEXT}
+          treatmentTypeText={TREATMENT_TEXT}
+          treatmentType={treatmentType}
           onSubmit={(id) => {
             setUserId(id);
             setStep("instructions");

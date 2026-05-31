@@ -178,7 +178,6 @@ code {
 .annotation-card {
   position: relative;
 
-  min-width: 160px;
   height: 100px;
 
   border-radius: 8px;
