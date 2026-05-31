@@ -16,19 +16,21 @@ import vtkInteractorStyleArcballCamera from './InteractorStyleArcballCamera';
 
 const NUMBER_OF_PATIENTS = parseInt(process.env.REACT_APP_NUMBER_OF_PATIENTS || 3);
 const NUMBER_OF_PROJECTIONS = parseInt(process.env.REACT_APP_NUMBER_OF_ANNOTATIONS || 2);
-const TREATMENT_TYPE = process.env.REACT_APP_TREATMENT_TYPE;
-const TREATMENT_COLUMN_MAP = {
+const TREATMENT_TEXT_MAP = {
     "coiling": "coiling",
-    "stent-assisted coiling": "stent_assisted_coiling",
-    "flow diverter": "flow_diverter",
-    "intrasaccular device": "intrasaccular_device",
+    "stent_assisted_coiling": "stent-assisted coiling",
+    "flow_diverter": "flow diverter",
+    "intrasaccular_device": "intrasaccular device",
   };
-const TREATMENT_COLUMN = TREATMENT_COLUMN_MAP[TREATMENT_TYPE];
 
-function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast, isFirst }) {
+function STLViewer({ userId, patientId, patientIndex, treatmentType, onNext, onPrevious, isLast, isFirst }) {
   const containerRef = useRef(null);
 
   const [annotations, setAnnotations] = useState([]);
+
+  const TREATMENT_TEXT = treatmentType
+  ? TREATMENT_TEXT_MAP[treatmentType]
+  : null;
 
   // Store VTK objects so we can access them outside useEffect
   const rendererRef = useRef(null);
@@ -350,7 +352,7 @@ function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast
         user_id: userId,
         patient_id: patientId,
         view_vector: viewVector,
-        treatment_type: TREATMENT_TYPE,
+        treatment_type: treatmentType,
         screenshot: screenshot,
       },
     ]);
@@ -377,27 +379,26 @@ function STLViewer({ userId, patientId, patientIndex, onNext, onPrevious, isLast
     <div className="vtk-wrapper">
       <div ref={containerRef} className="vtk-container" />
 
-      <div className="patient-id-overlay">
-        Case ID: {patientId} ({patientIndex+1}/{NUMBER_OF_PATIENTS}), treatment: {TREATMENT_COLUMN}, monoplane projections: ({annotations.length}/{NUMBER_OF_PROJECTIONS}) 
-      </div>
+      <div className="top-overlay">
+        <div className="viewer-controls">
+          <button onClick={onPrevious} disabled={isFirst}>
+            Previous case
+          </button>
 
-      {/* Controls */}
-      <div className="viewer-controls">
-        <button
-          onClick={onPrevious}
-          disabled={isFirst}
-        >
-          Previous case
-        </button>
-        <button onClick={handleReset}>Reset view</button>
-        <button onClick={handleInvert}>Invert view</button>
-        <button onClick={saveAnnotation}>Save view</button>
-        <button
-          onClick={onNext}
-          disabled={!canProceed}
-        >
-          {isLast ? "Finish" : "Next case"}
-        </button>
+          <button onClick={handleReset}>Reset view</button>
+          <button onClick={handleInvert}>Invert view</button>
+          <button onClick={saveAnnotation}>Save view</button>
+
+          <button onClick={onNext} disabled={!canProceed}>
+            {isLast ? "Finish" : "Next case"}
+          </button>
+        </div>
+
+        <div className="patient-id-overlay">
+          Case ID: {patientId} ({patientIndex + 1}/{NUMBER_OF_PATIENTS}),
+          treatment: {TREATMENT_TEXT},
+          monoplane projections: ({annotations.length}/{NUMBER_OF_PROJECTIONS})
+        </div>
       </div>
 
 
