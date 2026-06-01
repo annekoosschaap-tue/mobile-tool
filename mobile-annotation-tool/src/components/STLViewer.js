@@ -310,7 +310,7 @@ function STLViewer({ userId, patientId, patientIndex, treatmentType, onNext, onP
     camera.setFocalPoint(...focalPoint);
 
     // Optional but recommended: keep a consistent "up"
-    camera.setViewUp(0, -1, 0);
+    camera.setViewUp(0, 0, 1);
 
     camera.modified();
     renderer.resetCameraClippingRange();

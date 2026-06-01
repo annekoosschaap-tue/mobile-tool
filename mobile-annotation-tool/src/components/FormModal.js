@@ -207,7 +207,7 @@ export default function FormModal({ treatmentTypeText, treatmentType, onSubmit }
               required
             />
             <span>
-              I agree to the publication terms and confirm that the information
+              I agree that the data collected is used for publication and research, and confirm that the information
               provided is accurate.
             </span>
           </label>
