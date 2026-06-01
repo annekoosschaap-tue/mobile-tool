@@ -97,7 +97,7 @@ function STLViewer({ userId, patientId, patientIndex, treatmentType, onNext, onP
       renderer.addActor(actor);
 
       const camera = renderer.getActiveCamera();
-      camera.setPosition(-1, 0, 0);
+      camera.setPosition(0, 1, 0);
       camera.setFocalPoint(0, 0, 0);
       camera.setViewUp(0, 0, 1);
       camera.setParallelProjection(true);
@@ -281,7 +281,7 @@ function STLViewer({ userId, patientId, patientIndex, treatmentType, onNext, onP
     const renderWindow = renderWindowRef.current;
 
     // Reset to initial camera view (manual or default)
-    camera.setPosition(-1, 0, 0);
+    camera.setPosition(0, 1, 0);
     camera.setFocalPoint(0, 0, 0);
     camera.setViewUp(0, 0, 1);
     renderer.resetCamera()
